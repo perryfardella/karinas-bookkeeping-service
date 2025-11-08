@@ -52,7 +52,9 @@ export function Sidebar() {
                   <item.icon
                     className={cn(
                       "mr-3 h-5 w-5",
-                      isActive ? "text-primary-foreground" : "text-muted-foreground"
+                      isActive
+                        ? "text-primary-foreground"
+                        : "text-muted-foreground"
                     )}
                   />
                   {item.name}
@@ -67,7 +69,11 @@ export function Sidebar() {
       <div className="md:hidden">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-50">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="fixed top-4 left-4 z-50"
+            >
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
@@ -93,7 +99,9 @@ export function Sidebar() {
                       <item.icon
                         className={cn(
                           "mr-3 h-5 w-5",
-                          isActive ? "text-primary-foreground" : "text-muted-foreground"
+                          isActive
+                            ? "text-primary-foreground"
+                            : "text-muted-foreground"
                         )}
                       />
                       {item.name}
@@ -108,4 +116,3 @@ export function Sidebar() {
     </>
   );
 }
-

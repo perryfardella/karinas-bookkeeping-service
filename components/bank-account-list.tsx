@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/dialog";
 import { BankAccountForm } from "./bank-account-form";
 import { useRouter } from "next/navigation";
-import { Trash2, Edit } from "lucide-react";
+import { Trash2, Edit, Eye } from "lucide-react";
+import Link from "next/link";
 
 export type BankAccountWithBalance = {
   id: number;
@@ -116,6 +117,15 @@ export function BankAccountList({ accounts }: BankAccountListProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          asChild
+                        >
+                          <Link href={`/dashboard/transactions?bank_account_ids=${account.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
                         <BankAccountForm
                           accountId={account.id}
                           initialName={account.name}

@@ -7,7 +7,9 @@ import { TransactionForm } from "@/components/transaction-form";
 import { TransactionTable } from "@/components/transaction-table";
 import { TransactionFiltersComponent, TransactionFilters } from "@/components/transaction-filters";
 import { ExportButton } from "@/components/export-button";
-import { DollarSign, TrendingUp, TrendingDown } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
+import { useInfiniteTransactions } from "@/hooks/use-infinite-transactions";
+import { useSearchParams } from "next/navigation";
 
 type BankAccount = {
   id: number;
@@ -52,67 +54,112 @@ export default function TransactionsPageClient({
   initialBankAccounts: BankAccount[];
   initialCategories: CategoryWithChildren[];
 }) {
-  const [transactions, setTransactions] = useState<TransactionWithDetails[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const searchParams = useSearchParams();
+  
+  // Initialize filters from URL parameters
+  const initialFilters: TransactionFilters = {};
+  const bankAccountIdsParam = searchParams.get("bank_account_ids");
+  if (bankAccountIdsParam) {
+    initialFilters.bank_account_ids = bankAccountIdsParam
+      .split(",")
+      .map(Number)
+      .filter((id) => !isNaN(id));
+  }
+  
+  const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
+  const [sortField, setSortField] = useState<string>("date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [totals, setTotals] = useState<{
     total: number;
     income: number;
     expenses: number;
     count: number;
   } | null>(null);
-  const [filters, setFilters] = useState<TransactionFilters>({});
-  const [sortField, setSortField] = useState<string>("date");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const pageSize = 20;
   const skipRealtimeRef = useRef(false);
   const realtimeChannelRef = useRef<any>(null);
+  const resetTransactionsRef = useRef<() => Promise<void>>();
 
-  const loadTransactions = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        pageSize: pageSize.toString(),
-        sortField,
-        sortDirection,
-        ...(filters.bank_account_ids && {
-          bank_account_ids: filters.bank_account_ids.join(","),
-        }),
-        ...(filters.start_date && { start_date: filters.start_date }),
-        ...(filters.end_date && { end_date: filters.end_date }),
-        ...(filters.category_ids && {
-          category_ids: filters.category_ids.join(","),
-        }),
-        ...(filters.min_amount !== undefined && {
-          min_amount: filters.min_amount.toString(),
-        }),
-        ...(filters.max_amount !== undefined && {
-          max_amount: filters.max_amount.toString(),
-        }),
-        ...(filters.search && { search: filters.search }),
-      });
+  const {
+    data: transactions,
+    isLoading,
+    isFetching,
+    hasMore,
+    fetchNextPage,
+    reset: resetTransactions,
+    updateData,
+  } = useInfiniteTransactions({
+    pageSize: 20,
+    sortField,
+    sortDirection,
+    filters,
+  });
 
-      const response = await fetch(`/api/transactions?${params}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch transactions");
-      }
+  // Store reset function in ref to avoid dependency issues
+  resetTransactionsRef.current = resetTransactions;
 
-      const data = await response.json();
-      setTransactions(data.transactions || []);
-      setTotalPages(data.totalPages || 1);
-      setTotals(data.totals || null);
-    } catch (error) {
-      console.error("Error loading transactions:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Update filters when URL parameters change
   useEffect(() => {
-    loadTransactions();
-  }, [currentPage, filters, sortField, sortDirection]);
+    const bankAccountIdsParam = searchParams.get("bank_account_ids");
+    if (bankAccountIdsParam) {
+      const accountIds = bankAccountIdsParam
+        .split(",")
+        .map(Number)
+        .filter((id) => !isNaN(id));
+      if (accountIds.length > 0) {
+        setFilters((prev) => ({
+          ...prev,
+          bank_account_ids: accountIds,
+        }));
+      }
+    } else {
+      // Clear bank_account_ids filter if not in URL
+      setFilters((prev) => {
+        const { bank_account_ids, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [searchParams]);
+
+  // Load totals separately (needs all transactions, not just loaded ones)
+  useEffect(() => {
+    const loadTotals = async () => {
+      try {
+        const params = new URLSearchParams({
+          page: "1", // Required by API
+          pageSize: "1", // We only need totals, not transactions
+          ...(filters.bank_account_ids && {
+            bank_account_ids: filters.bank_account_ids.join(","),
+          }),
+          ...(filters.start_date && { start_date: filters.start_date }),
+          ...(filters.end_date && { end_date: filters.end_date }),
+          ...(filters.category_ids && {
+            category_ids: filters.category_ids.join(","),
+          }),
+          ...(filters.min_amount !== undefined && {
+            min_amount: filters.min_amount.toString(),
+          }),
+          ...(filters.max_amount !== undefined && {
+            max_amount: filters.max_amount.toString(),
+          }),
+          ...(filters.search && { search: filters.search }),
+        });
+
+        const response = await fetch(`/api/transactions?${params}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Failed to fetch totals: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        setTotals(data.totals || null);
+      } catch (error) {
+        console.error("Error loading totals:", error);
+        // Don't set totals to null on error, keep previous value
+      }
+    };
+
+    loadTotals();
+  }, [filters]);
 
   // Set up real-time subscription (separate effect to avoid re-subscribing on filter changes)
   useEffect(() => {
@@ -128,16 +175,12 @@ export default function TransactionsPageClient({
         },
         (payload: any) => {
           // Skip reload if we've optimistically updated this specific transaction
-          // Check both the skip flag (for bulk operations) and specific IDs
           if (skipRealtimeRef.current) {
             return;
           }
           
-          // If we have specific transaction IDs that were optimistically updated,
-          // we could check payload.new?.id here, but for now the flag should be sufficient
-          
-          // Reload transactions when changes occur from other sources
-          loadTransactions();
+          // Reset and reload transactions when changes occur from other sources
+          resetTransactionsRef.current?.();
         }
       )
       .subscribe();
@@ -148,7 +191,7 @@ export default function TransactionsPageClient({
       supabase.removeChannel(channel);
       realtimeChannelRef.current = null;
     };
-  }, []); // Empty deps - only subscribe once
+  }, []); // Empty deps - use ref to call reset
 
   // Function to temporarily disable realtime
   const disableRealtime = () => {
@@ -175,7 +218,7 @@ export default function TransactionsPageClient({
           if (skipRealtimeRef.current) {
             return;
           }
-          loadTransactions();
+          resetTransactionsRef.current?.();
         }
       )
       .subscribe();
@@ -185,13 +228,28 @@ export default function TransactionsPageClient({
   const handleSortChange = (field: string, direction: "asc" | "desc") => {
     setSortField(field);
     setSortDirection(direction);
-    setCurrentPage(1);
   };
 
   const handleFiltersChange = (newFilters: TransactionFilters) => {
     setFilters(newFilters);
-    setCurrentPage(1);
   };
+
+  // Determine if we should show the bank balance column
+  // Show it if:
+  // 1. Filtering by exactly one bank account AND no other filters are applied, OR
+  // 2. No filters at all and user has only one account
+  const hasOtherFilters = !!(
+    filters.start_date ||
+    filters.end_date ||
+    filters.category_ids ||
+    filters.min_amount !== undefined ||
+    filters.max_amount !== undefined ||
+    filters.search
+  );
+  
+  const shouldShowBankBalance = 
+    ((filters.bank_account_ids && filters.bank_account_ids.length === 1) && !hasOtherFilters) ||
+    (!filters.bank_account_ids && !hasOtherFilters && initialBankAccounts.length === 1);
 
   return (
     <div className="container mx-auto py-8 px-4 space-y-6">
@@ -202,7 +260,9 @@ export default function TransactionsPageClient({
           <TransactionForm
             bankAccounts={initialBankAccounts}
             categories={initialCategories}
-            onSuccess={loadTransactions}
+            onSuccess={() => {
+              resetTransactions();
+            }}
           />
         </div>
       </div>
@@ -273,24 +333,29 @@ export default function TransactionsPageClient({
         </div>
       )}
 
-      {loading ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Loading transactions...
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="text-muted-foreground">Loading transactions...</div>
         </div>
       ) : (
         <TransactionTable
           transactions={transactions}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
+          hasMore={hasMore}
+          isFetching={isFetching}
+          onLoadMore={fetchNextPage}
           onSortChange={handleSortChange}
           sortField={sortField}
           sortDirection={sortDirection}
           bankAccounts={initialBankAccounts}
           categories={initialCategories}
-          onRefresh={loadTransactions}
+          showBankBalance={shouldShowBankBalance}
+          onRefresh={() => {
+            resetTransactions();
+          }}
           onTransactionsUpdate={(updater) => {
-            setTransactions(updater);
+            // Update the hook's data optimistically
+            updateData(updater);
           }}
           onSkipRealtime={(skip) => {
             skipRealtimeRef.current = skip;

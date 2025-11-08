@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
+import { flattenCategoriesForSelect } from "@/lib/utils/category-display";
 
 type CategoryWithChildren = {
   id: number;
@@ -29,35 +30,20 @@ type CategoryWithChildren = {
   children?: CategoryWithChildren[];
 };
 
-function flattenCategoriesForSelect(
-  categories: CategoryWithChildren[],
-  excludeIds: Set<number>,
-  prefix: string = ""
-): Array<{ id: number; name: string; displayName: string }> {
-  const result: Array<{ id: number; name: string; displayName: string }> = [];
-  
-  categories.forEach((cat) => {
-    // Skip the category being edited and all its descendants
-    if (excludeIds.has(cat.id)) {
-      return;
-    }
-    
-    const displayName = prefix ? `${prefix} > ${cat.name}` : cat.name;
-    result.push({
-      id: cat.id,
-      name: cat.name,
-      displayName,
+// Helper function to filter out excluded categories and their descendants
+function filterCategoriesWithExclusions<T extends { id: number; name: string; children?: T[] }>(
+  categories: T[],
+  excludeIds: Set<number>
+): T[] {
+  return categories
+    .filter((cat) => !excludeIds.has(cat.id))
+    .map((cat) => {
+      if (cat.children && cat.children.length > 0) {
+        const filteredChildren = filterCategoriesWithExclusions(cat.children, excludeIds);
+        return { ...cat, children: filteredChildren };
+      }
+      return cat;
     });
-    
-    // Recursively add children
-    if (cat.children && cat.children.length > 0) {
-      result.push(
-        ...flattenCategoriesForSelect(cat.children, excludeIds, displayName)
-      );
-    }
-  });
-  
-  return result;
 }
 
 // Helper function to find a category by ID in the tree
@@ -95,7 +81,10 @@ type CategoryFormProps = {
   initialName?: string;
   initialParentId?: number | null;
   allCategories?: CategoryWithChildren[];
-  onSuccess?: () => void;
+  onSuccess?: (newCategoryId?: number) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: React.ReactNode;
 };
 
 export function CategoryForm({
@@ -104,15 +93,22 @@ export function CategoryForm({
   initialParentId = null,
   allCategories = [],
   onSuccess,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  trigger,
 }: CategoryFormProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [name, setName] = useState(initialName);
   const [parentId, setParentId] = useState<string>(
     initialParentId?.toString() || "none"
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Use controlled open if provided, otherwise use internal state
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange || setInternalOpen;
 
   useEffect(() => {
     if (open) {
@@ -147,11 +143,19 @@ export function CategoryForm({
         throw new Error(data.error || "Failed to save category");
       }
 
+      const result = await response.json();
+      const newCategoryId = result.id;
+
       setOpen(false);
       setName("");
       setParentId("none");
-      router.refresh();
-      onSuccess?.();
+      
+      // Only refresh router if not controlled (to avoid double refresh)
+      if (controlledOpen === undefined) {
+        router.refresh();
+      }
+      
+      onSuccess?.(newCategoryId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -161,11 +165,17 @@ export function CategoryForm({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant={categoryId ? "outline" : "default"}>
-          {categoryId ? "Edit" : "Add Category"}
-        </Button>
-      </DialogTrigger>
+      {trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : (
+        !controlledOpen && (
+          <DialogTrigger asChild>
+            <Button variant={categoryId ? "outline" : "default"}>
+              {categoryId ? "Edit" : "Add Category"}
+            </Button>
+          </DialogTrigger>
+        )
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
@@ -212,9 +222,23 @@ export function CategoryForm({
                         })()
                       : new Set<number>();
                     
-                    return flattenCategoriesForSelect(allCategories, excludeIds).map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id.toString()}>
-                        {cat.displayName}
+                    // Filter out excluded categories first
+                    const filteredCategories = filterCategoriesWithExclusions(allCategories, excludeIds);
+                    
+                    // Then flatten with hierarchical display
+                    const flatCategories = flattenCategoriesForSelect(filteredCategories);
+                    
+                    return flatCategories.map((cat) => (
+                      <SelectItem 
+                        key={cat.id} 
+                        value={cat.id.toString()}
+                        title={cat.fullPath}
+                        style={{ paddingLeft: `${8 + cat.level * 16}px` }}
+                      >
+                        <span className="font-mono text-xs text-muted-foreground mr-2">
+                          {cat.level > 0 && (cat.isLast ? "└─" : "├─")}
+                        </span>
+                        {cat.name}
                       </SelectItem>
                     ));
                   })()}

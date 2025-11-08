@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { flattenCategoriesForSelect } from "@/lib/utils/category-display";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,7 +30,7 @@ import {
 } from "@/components/ui/popover";
 import { CalendarIcon, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn, parseLocalDate } from "@/lib/utils";
 
 type TransactionWithDetails = {
   id: number;
@@ -79,24 +80,6 @@ type TransactionFormProps = {
   onSkipRealtime?: (skip: boolean) => void;
 };
 
-function flattenCategories(
-  categories: CategoryWithChildren[],
-  prefix: string = ""
-): Array<Category & { displayName: string }> {
-  const result: Array<Category & { displayName: string }> = [];
-  categories.forEach((cat) => {
-    result.push({
-      ...cat,
-      displayName: prefix + cat.name,
-    });
-    if (cat.children && cat.children.length > 0) {
-      result.push(
-        ...flattenCategories(cat.children, prefix + cat.name + " > ")
-      );
-    }
-  });
-  return result;
-}
 
 export function TransactionForm({
   bankAccounts,
@@ -117,7 +100,7 @@ export function TransactionForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const flatCategories = flattenCategories(categories);
+  const flatCategories = flattenCategoriesForSelect(categories);
   const selectedCategory = flatCategories.find(
     (c) => c.id.toString() === categoryId
   );
@@ -126,7 +109,8 @@ export function TransactionForm({
   useEffect(() => {
     if (open) {
       if (transaction) {
-        setDate(new Date(transaction.date));
+        // Parse date as local date to avoid timezone shifts
+        setDate(parseLocalDate(transaction.date));
         setBankAccountId(transaction.bank_account_id.toString());
         setAmount(transaction.amount.toString());
         setDescription(transaction.description);
@@ -375,13 +359,21 @@ export function TransactionForm({
                 <SelectTrigger id="category">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
-                <SelectContent>
-                  {flatCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>
-                      {cat.displayName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                  <SelectContent>
+                    {flatCategories.map((cat) => (
+                      <SelectItem 
+                        key={cat.id} 
+                        value={cat.id.toString()} 
+                        title={cat.fullPath}
+                        style={{ paddingLeft: `${8 + cat.level * 16}px` }}
+                      >
+                        <span className="font-mono text-xs text-muted-foreground mr-2">
+                          {cat.level > 0 && (cat.isLast ? "└─" : "├─")}
+                        </span>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
               </Select>
             </div>
 

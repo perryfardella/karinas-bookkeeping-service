@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { flattenCategoriesForSelect } from "@/lib/utils/category-display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,24 +53,6 @@ type TransactionFiltersProps = {
   onFiltersChange: (filters: TransactionFilters) => void;
 };
 
-function flattenCategories(
-  categories: CategoryWithChildren[],
-  prefix: string = ""
-): Array<Category & { displayName: string }> {
-  const result: Array<Category & { displayName: string }> = [];
-  categories.forEach((cat) => {
-    result.push({
-      ...cat,
-      displayName: prefix + cat.name,
-    });
-    if (cat.children && cat.children.length > 0) {
-      result.push(
-        ...flattenCategories(cat.children, prefix + cat.name + " > ")
-      );
-    }
-  });
-  return result;
-}
 
 export function TransactionFiltersComponent({
   bankAccounts,
@@ -85,7 +67,7 @@ export function TransactionFiltersComponent({
     filters.end_date ? new Date(filters.end_date) : undefined
   );
 
-  const flatCategories = flattenCategories(categories);
+  const flatCategories = flattenCategoriesForSelect(categories);
 
   const updateFilter = (key: keyof TransactionFilters, value: any) => {
     onFiltersChange({ ...filters, [key]: value });
@@ -214,8 +196,16 @@ export function TransactionFiltersComponent({
             <SelectContent>
               <SelectItem value="all">All categories</SelectItem>
               {flatCategories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id.toString()}>
-                  {cat.displayName}
+                <SelectItem 
+                  key={cat.id} 
+                  value={cat.id.toString()} 
+                  title={cat.fullPath}
+                  style={{ paddingLeft: `${8 + cat.level * 16}px` }}
+                >
+                  <span className="font-mono text-xs text-muted-foreground mr-2">
+                    {cat.level > 0 && (cat.isLast ? "└─" : "├─")}
+                  </span>
+                  {cat.name}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -20,6 +20,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CategoryPieChart, MonthlyTrendChart } from "@/components/charts";
 import { ExportButton } from "@/components/export-button";
+import { CategoryDisplay } from "@/components/category-display";
 
 type CategorySummary = {
   category_id: number;
@@ -43,7 +44,9 @@ export default function ReportsPageClient() {
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ReportsData | null>(null);
-  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [monthlyData, setMonthlyData] = useState<
+    Array<{ month: string; income: number; expenses: number }>
+  >([]);
 
   const loadReports = async () => {
     setLoading(true);
@@ -81,6 +84,7 @@ export default function ReportsPageClient() {
 
   useEffect(() => {
     loadReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate]);
 
   const formatCurrency = (amount: number) => {
@@ -266,9 +270,14 @@ export default function ReportsPageClient() {
                       >
                         <div>
                           <div className="font-medium">
-                            {summary.parent_category_name
-                              ? `${summary.parent_category_name} > ${summary.category_name}`
-                              : summary.category_name}
+                            <CategoryDisplay
+                              categoryPath={
+                                summary.parent_category_name
+                                  ? `${summary.parent_category_name} > ${summary.category_name}`
+                                  : summary.category_name
+                              }
+                              variant="medium"
+                            />
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {summary.transaction_count} transaction
@@ -311,9 +320,14 @@ export default function ReportsPageClient() {
                       >
                         <div>
                           <div className="font-medium">
-                            {summary.parent_category_name
-                              ? `${summary.parent_category_name} > ${summary.category_name}`
-                              : summary.category_name}
+                            <CategoryDisplay
+                              categoryPath={
+                                summary.parent_category_name
+                                  ? `${summary.parent_category_name} > ${summary.category_name}`
+                                  : summary.category_name
+                              }
+                              variant="medium"
+                            />
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {summary.transaction_count} transaction
@@ -348,12 +362,16 @@ export default function ReportsPageClient() {
                 </div>
               ) : (
                 <CategoryPieChart
-                  data={expenseSummaries.map((s) => ({
-                    name: s.parent_category_name
+                  data={expenseSummaries.map((s) => {
+                    const fullName = s.parent_category_name
                       ? `${s.parent_category_name} > ${s.category_name}`
-                      : s.category_name,
-                    value: Math.abs(s.total_amount),
-                  }))}
+                      : s.category_name;
+                    return {
+                      name: fullName,
+                      value: Math.abs(s.total_amount),
+                      fullName: fullName,
+                    };
+                  })}
                 />
               )}
             </CardContent>

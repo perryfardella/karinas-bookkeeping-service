@@ -78,12 +78,20 @@ export async function getTransactions(
     query = query.in("category_id", filters.category_ids);
   }
 
-  if (filters.min_amount !== undefined) {
+  if (filters.min_amount !== undefined && filters.min_amount > 0) {
+    // For min_amount, match both positive amounts >= min_amount and negative amounts <= -min_amount
+    // This allows filtering by absolute value (e.g., "fees > $2" matches -5.00)
+    // Use or() with proper syntax: 'column.operator.value,column.operator.value'
+    query = query.or(`amount.gte.${filters.min_amount},amount.lte.-${filters.min_amount}`);
+  } else if (filters.min_amount !== undefined) {
+    // If min_amount is negative or zero, just use gte
     query = query.gte("amount", filters.min_amount);
   }
 
   if (filters.max_amount !== undefined) {
-    query = query.lte("amount", filters.max_amount);
+    // For max_amount, match amounts between -max_amount and max_amount
+    // This allows filtering by absolute value (e.g., "amounts < $10" matches both 5.00 and -5.00)
+    query = query.gte("amount", -filters.max_amount).lte("amount", filters.max_amount);
   }
 
   if (filters.search) {
@@ -135,9 +143,47 @@ export async function getTransactionTotals(
   filters: TransactionFilters = {}
 ): Promise<{ total: number; income: number; expenses: number; count: number }> {
   const supabase = await createClient();
+  
+  // Get count first
+  const countQuery = supabase.from("transactions").select("id", { count: "exact", head: true });
+  
+  // Apply filters to count query
+  if (filters.bank_account_ids && filters.bank_account_ids.length > 0) {
+    countQuery.in("bank_account_id", filters.bank_account_ids);
+  }
+  if (filters.start_date) {
+    countQuery.gte("date", filters.start_date);
+  }
+  if (filters.end_date) {
+    countQuery.lte("date", filters.end_date);
+  }
+  if (filters.category_ids && filters.category_ids.length > 0) {
+    countQuery.in("category_id", filters.category_ids);
+  }
+  if (filters.min_amount !== undefined && filters.min_amount > 0) {
+    // For min_amount, match both positive amounts >= min_amount and negative amounts <= -min_amount
+    countQuery.or(`amount.gte.${filters.min_amount},amount.lte.-${filters.min_amount}`);
+  } else if (filters.min_amount !== undefined) {
+    countQuery.gte("amount", filters.min_amount);
+  }
+  if (filters.max_amount !== undefined) {
+    // For max_amount, match amounts between -max_amount and max_amount
+    countQuery.gte("amount", -filters.max_amount).lte("amount", filters.max_amount);
+  }
+  if (filters.search) {
+    countQuery.ilike("description", `%${filters.search}%`);
+  }
+  
+  const { count, error: countError } = await countQuery;
+  
+  if (countError) {
+    throw new Error(`Failed to get transaction count: ${countError.message}`);
+  }
+  
+  // Get all amounts for totals calculation
   let query = supabase.from("transactions").select("amount");
 
-  // Apply filters (same as getTransactionCount)
+  // Apply filters (same as count query)
   if (filters.bank_account_ids && filters.bank_account_ids.length > 0) {
     query = query.in("bank_account_id", filters.bank_account_ids);
   }
@@ -154,12 +200,16 @@ export async function getTransactionTotals(
     query = query.in("category_id", filters.category_ids);
   }
 
-  if (filters.min_amount !== undefined) {
+  if (filters.min_amount !== undefined && filters.min_amount > 0) {
+    // For min_amount, match both positive amounts >= min_amount and negative amounts <= -min_amount
+    query = query.or(`amount.gte.${filters.min_amount},amount.lte.-${filters.min_amount}`);
+  } else if (filters.min_amount !== undefined) {
     query = query.gte("amount", filters.min_amount);
   }
 
   if (filters.max_amount !== undefined) {
-    query = query.lte("amount", filters.max_amount);
+    // For max_amount, match amounts between -max_amount and max_amount
+    query = query.gte("amount", -filters.max_amount).lte("amount", filters.max_amount);
   }
 
   if (filters.search) {
@@ -185,7 +235,7 @@ export async function getTransactionTotals(
     total,
     income,
     expenses,
-    count: transactions.length,
+    count: count || 0,
   };
 }
 
@@ -215,12 +265,16 @@ export async function getTransactionCount(
     query = query.in("category_id", filters.category_ids);
   }
 
-  if (filters.min_amount !== undefined) {
+  if (filters.min_amount !== undefined && filters.min_amount > 0) {
+    // For min_amount, match both positive amounts >= min_amount and negative amounts <= -min_amount
+    query = query.or(`amount.gte.${filters.min_amount},amount.lte.-${filters.min_amount}`);
+  } else if (filters.min_amount !== undefined) {
     query = query.gte("amount", filters.min_amount);
   }
 
   if (filters.max_amount !== undefined) {
-    query = query.lte("amount", filters.max_amount);
+    // For max_amount, match amounts between -max_amount and max_amount
+    query = query.gte("amount", -filters.max_amount).lte("amount", filters.max_amount);
   }
 
   if (filters.search) {
