@@ -1,0 +1,9 @@
+---
+# Specify the following for Cursor rules
+description: Always consider the Product Requirements Document when making decisions
+alwaysApply: true
+---
+
+# Product Requirements Document Reference
+
+Always consider the Product Requirements Document (PRD) located at `docs/prd.md` when making decisions, implementing features, or providing code suggestions. The PRD contains the complete product specifications, user requirements, technical stack details, and development guidelines for Karina's Bookkeeping Service.
