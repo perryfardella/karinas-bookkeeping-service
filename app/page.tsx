@@ -74,9 +74,9 @@ export default function Home() {
             Simplify Your Business Finances
           </h2>
           <p className="mt-6 text-lg leading-8 text-muted-foreground sm:text-xl">
-            A simple, intuitive bookkeeping service designed for small businesses.
-            Track transactions, categorize expenses, and gain insights into your
-            cash flow—all in one place.
+            A simple, intuitive bookkeeping service designed for small
+            businesses. Track transactions, categorize expenses, and gain
+            insights into your cash flow—all in one place.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button size="lg" asChild>
@@ -234,7 +234,7 @@ export default function Home() {
                   </CardDescription>
                 </CardHeader>
                 <div className="px-6 pb-6">
-                  <div className="h-64 w-full">
+                  <div className="h-64 w-full min-h-[256px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsPieChart>
                         <Pie
@@ -273,7 +273,9 @@ export default function Home() {
                       <div key={item.name} className="flex items-center gap-2">
                         <div
                           className="size-3 rounded-full"
-                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                          style={{
+                            backgroundColor: COLORS[index % COLORS.length],
+                          }}
                         />
                         <span>{item.name}</span>
                       </div>
@@ -294,7 +296,7 @@ export default function Home() {
                   </CardDescription>
                 </CardHeader>
                 <div className="px-6 pb-6">
-                  <div className="h-64 w-full">
+                  <div className="h-64 w-full min-h-[256px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsLineChart data={monthlyData}>
                         <CartesianGrid
@@ -313,7 +315,9 @@ export default function Home() {
                           tickFormatter={(value) => `$${value / 1000}k`}
                         />
                         <Tooltip
-                          formatter={(value: number) => `$${value.toLocaleString()}`}
+                          formatter={(value: number) =>
+                            `$${value.toLocaleString()}`
+                          }
                           contentStyle={{
                             backgroundColor: "var(--card)",
                             border: "1px solid var(--border)",
@@ -372,8 +376,14 @@ export default function Home() {
                       <div className="text-muted-foreground">
                         $
                         {(
-                          monthlyData.reduce((sum, item) => sum + item.income, 0) -
-                          monthlyData.reduce((sum, item) => sum + item.expenses, 0)
+                          monthlyData.reduce(
+                            (sum, item) => sum + item.income,
+                            0
+                          ) -
+                          monthlyData.reduce(
+                            (sum, item) => sum + item.expenses,
+                            0
+                          )
                         ).toLocaleString()}
                       </div>
                     </div>
