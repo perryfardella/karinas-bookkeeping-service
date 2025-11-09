@@ -100,27 +100,29 @@ export default function ReportsPageClient() {
     data?.summaries.filter((s) => s.total_amount < 0) || [];
 
   return (
-    <div className="container mx-auto py-8 px-4 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto py-4 sm:py-8 px-4 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Reports</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold">Reports</h1>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
             View financial summaries and category breakdowns
           </p>
         </div>
         {data && (
-          <ExportButton
-            categorySummaries={data.summaries.map((s) => ({
-              category_name: s.category_name,
-              parent_category_name: s.parent_category_name,
-              total_amount: s.total_amount,
-              transaction_count: s.transaction_count,
-            }))}
-            filename={`reports-${format(startDate, "yyyy-MM-dd")}-${format(
-              endDate,
-              "yyyy-MM-dd"
-            )}.csv`}
-          />
+          <div className="w-full sm:w-auto">
+            <ExportButton
+              categorySummaries={data.summaries.map((s) => ({
+                category_name: s.category_name,
+                parent_category_name: s.parent_category_name,
+                total_amount: s.total_amount,
+                transaction_count: s.transaction_count,
+              }))}
+              filename={`reports-${format(startDate, "yyyy-MM-dd")}-${format(
+                endDate,
+                "yyyy-MM-dd"
+              )}.csv`}
+            />
+          </div>
         )}
       </div>
 
@@ -131,15 +133,15 @@ export default function ReportsPageClient() {
           <CardDescription>Select the period for your report</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <div className="gap-2 flex items-center">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="space-y-2 flex-1">
               <label className="text-sm font-medium">Start Date</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-[240px] justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal",
                       !startDate && "text-muted-foreground"
                     )}
                   >
@@ -162,14 +164,14 @@ export default function ReportsPageClient() {
               </Popover>
             </div>
 
-            <div className="gap-2 flex items-center">
+            <div className="space-y-2 flex-1">
               <label className="text-sm font-medium">End Date</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-[240px] justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal",
                       !endDate && "text-muted-foreground"
                     )}
                   >
@@ -197,7 +199,7 @@ export default function ReportsPageClient() {
 
       {/* Summary Cards */}
       {data && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium">
@@ -247,7 +249,7 @@ export default function ReportsPageClient() {
           Loading reports...
         </div>
       ) : data ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Income Categories */}
           <Card>
             <CardHeader>
@@ -266,9 +268,9 @@ export default function ReportsPageClient() {
                     .map((summary) => (
                       <div
                         key={summary.category_id}
-                        className="flex items-center justify-between p-3 border rounded-md"
+                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 p-3 border rounded-md"
                       >
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <div className="font-medium">
                             <CategoryDisplay
                               categoryPath={
@@ -284,7 +286,7 @@ export default function ReportsPageClient() {
                             {summary.transaction_count !== 1 ? "s" : ""}
                           </div>
                         </div>
-                        <div className="font-medium text-green-600">
+                        <div className="font-medium text-green-600 shrink-0">
                           {formatCurrency(summary.total_amount)}
                         </div>
                       </div>
@@ -316,9 +318,9 @@ export default function ReportsPageClient() {
                     .map((summary) => (
                       <div
                         key={summary.category_id}
-                        className="flex items-center justify-between p-3 border rounded-md"
+                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 p-3 border rounded-md"
                       >
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <div className="font-medium">
                             <CategoryDisplay
                               categoryPath={
@@ -334,7 +336,7 @@ export default function ReportsPageClient() {
                             {summary.transaction_count !== 1 ? "s" : ""}
                           </div>
                         </div>
-                        <div className="font-medium text-red-600">
+                        <div className="font-medium text-red-600 shrink-0">
                           {formatCurrency(Math.abs(summary.total_amount))}
                         </div>
                       </div>
@@ -348,7 +350,7 @@ export default function ReportsPageClient() {
 
       {/* Charts */}
       {data && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Pie Chart */}
           <Card>
             <CardHeader>

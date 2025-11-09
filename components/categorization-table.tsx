@@ -312,7 +312,8 @@ export function CategorizationTable({
         </div>
       )}
 
-      <div className="rounded-md border">
+      {/* Desktop Table View - hidden on mobile */}
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -342,7 +343,7 @@ export function CategorizationTable({
                 <TableRow
                   key={index}
                   className={
-                    isCategorized ? "" : "!border-l-4 !border-l-yellow-500"
+                    isCategorized ? "" : "border-l-4 border-l-yellow-500"
                   }
                 >
                   <TableCell>
@@ -428,7 +429,7 @@ export function CategorizationTable({
                           <PopoverTrigger asChild>
                             <button
                               type="button"
-                              className="flex-shrink-0 focus:outline-none cursor-help"
+                              className="shrink-0 focus:outline-none cursor-help"
                               aria-label="Category required"
                               onMouseEnter={() => setHoveredRowIndex(index)}
                               onMouseLeave={() => setHoveredRowIndex(null)}
@@ -464,6 +465,125 @@ export function CategorizationTable({
             })}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Card View - visible on mobile only */}
+      <div className="md:hidden space-y-3">
+        {editedTransactions.map((transaction, index) => {
+          const isCategorized = !!transaction.categoryId;
+
+          return (
+            <div
+              key={index}
+              className={`border rounded-lg p-4 space-y-3 ${
+                selectedRows.has(index) ? "bg-muted/50" : ""
+              } ${!isCategorized ? "border-l-4 border-l-yellow-500" : ""}`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Checkbox
+                      checked={selectedRows.has(index)}
+                      onCheckedChange={() => toggleRowSelection(index)}
+                    />
+                    <Input
+                      type="date"
+                      value={transaction.date}
+                      onChange={(e) =>
+                        updateTransaction(index, { date: e.target.value })
+                      }
+                      className="w-auto text-sm"
+                    />
+                  </div>
+                  <Input
+                    value={transaction.description}
+                    onChange={(e) =>
+                      updateTransaction(index, {
+                        description: e.target.value,
+                      })
+                    }
+                    placeholder="Description"
+                    className="w-full mb-2"
+                  />
+                </div>
+                <div className="text-right shrink-0">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={transaction.amount}
+                    onChange={(e) =>
+                      updateTransaction(index, {
+                        amount: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="w-[100px] text-right"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div className="pt-2 border-t space-y-2">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">
+                    Category {!isCategorized && (
+                      <AlertCircle className="inline h-3 w-3 text-yellow-600 dark:text-yellow-400 ml-1" />
+                    )}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={transaction.categoryId?.toString() || ""}
+                      onValueChange={(value) => {
+                        const categoryId = parseInt(value);
+                        updateTransaction(index, {
+                          categoryId,
+                        });
+                      }}
+                    >
+                      <SelectTrigger
+                        className={`w-full ${
+                          !isCategorized
+                            ? "border-yellow-500 focus:ring-yellow-500 bg-yellow-50/50 dark:bg-yellow-950/10"
+                            : ""
+                        }`}
+                      >
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {flatCategories.map((cat) => (
+                          <SelectItem
+                            key={cat.id}
+                            value={cat.id.toString()}
+                            title={cat.fullPath}
+                            style={{ paddingLeft: `${8 + cat.level * 16}px` }}
+                          >
+                            <span className="font-mono text-xs text-muted-foreground mr-2">
+                              {cat.level > 0 && (cat.isLast ? "└─" : "├─")}
+                            </span>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {!isCategorized && (
+                    <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                      Category required to import
+                    </p>
+                  )}
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeleteRow(index)}
+                    className="h-8 w-8"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Floating bulk categorize box */}

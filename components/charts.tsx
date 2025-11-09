@@ -44,7 +44,7 @@ export function CategoryPieChart({ data }: { data: ChartData[] }) {
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={250} minHeight={250}>
       <PieChart>
         <Pie
           data={chartData}
@@ -91,7 +91,7 @@ export function CategoryPieChart({ data }: { data: ChartData[] }) {
 
 export function MonthlyTrendChart({ data }: { data: MonthlyData[] }) {
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={250} minHeight={250}>
       <LineChart data={data}>
         <CartesianGrid
           strokeDasharray="3 3"

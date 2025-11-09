@@ -91,59 +91,113 @@ export function BankAccountList({ accounts }: BankAccountListProps) {
             <p className="text-sm mt-2">Create your first bank account to get started.</p>
           </div>
         ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Account Name</TableHead>
-                  <TableHead className="text-right">Balance</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {accounts.map((account) => (
-                  <TableRow key={account.id}>
-                    <TableCell className="font-medium">{account.name}</TableCell>
-                    <TableCell className="text-right">
+          <>
+            {/* Desktop Table View - hidden on mobile */}
+            <div className="hidden md:block rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Account Name</TableHead>
+                    <TableHead className="text-right">Balance</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {accounts.map((account) => (
+                    <TableRow key={account.id}>
+                      <TableCell className="font-medium">{account.name}</TableCell>
+                      <TableCell className="text-right">
+                        <span
+                          className={
+                            account.balance >= 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }
+                        >
+                          {formatCurrency(account.balance)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            asChild
+                          >
+                            <Link href={`/dashboard/transactions?bank_account_ids=${account.id}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <BankAccountForm
+                            accountId={account.id}
+                            initialName={account.name}
+                          />
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleDeleteClick(account.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Card View - visible on mobile only */}
+            <div className="md:hidden space-y-3">
+              {accounts.map((account) => (
+                <div
+                  key={account.id}
+                  className="border rounded-lg p-4 space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-base">{account.name}</h3>
+                    </div>
+                    <div className="text-right flex-shrink-0">
                       <span
-                        className={
+                        className={`text-lg font-semibold ${
                           account.balance >= 0
                             ? "text-green-600"
                             : "text-red-600"
-                        }
+                        }`}
                       >
                         {formatCurrency(account.balance)}
                       </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          asChild
-                        >
-                          <Link href={`/dashboard/transactions?bank_account_ids=${account.id}`}>
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <BankAccountForm
-                          accountId={account.id}
-                          initialName={account.name}
-                        />
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleDeleteClick(account.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="flex-1"
+                    >
+                      <Link href={`/dashboard/transactions?bank_account_ids=${account.id}`}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Transactions
+                      </Link>
+                    </Button>
+                    <BankAccountForm
+                      accountId={account.id}
+                      initialName={account.name}
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleDeleteClick(account.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 

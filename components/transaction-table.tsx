@@ -479,7 +479,8 @@ export function TransactionTable({
           </div>
         )}
 
-        <div className="rounded-md border">
+        {/* Desktop Table View - hidden on mobile */}
+        <div className="hidden md:block rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -635,6 +636,111 @@ export function TransactionTable({
           </Table>
         </div>
 
+        {/* Mobile Card View - visible on mobile only */}
+        <div className="md:hidden space-y-3">
+          {transactions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground border rounded-md">
+              No transactions found
+            </div>
+          ) : (
+            transactions.map((transaction) => (
+              <div
+                key={transaction.id}
+                className={`border rounded-lg p-4 space-y-3 ${
+                  selectedRows.has(transaction.id) ? "bg-muted/50" : ""
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      {categories.length > 0 && (
+                        <Checkbox
+                          checked={selectedRows.has(transaction.id)}
+                          onCheckedChange={() =>
+                            toggleRowSelection(transaction.id)
+                          }
+                        />
+                      )}
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {format(parseLocalDate(transaction.date), "MMM dd, yyyy")}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-base break-words">
+                      {transaction.description}
+                    </h3>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      {transaction.bank_account.name}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span
+                      className={`text-lg font-semibold ${
+                        transaction.amount >= 0
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {formatCurrency(transaction.amount)}
+                    </span>
+                    {transaction.transfer_to_account && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        → {transaction.transfer_to_account.name}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Category</div>
+                    <CategoryDisplay
+                      categoryPath={formatCategory(transaction.category)}
+                      variant="medium"
+                    />
+                  </div>
+                  {showBankBalance && (
+                    <div className="text-right">
+                      <div className="text-xs text-muted-foreground mb-1">Balance</div>
+                      <span
+                        className={`text-sm font-medium ${
+                          transaction.running_balance >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {formatCurrency(transaction.running_balance)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {bankAccounts.length > 0 && categories.length > 0 && (
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <TransactionForm
+                      bankAccounts={bankAccounts}
+                      categories={categories}
+                      transaction={transaction}
+                      onSuccess={() => {
+                        if (!transaction) {
+                          onRefresh?.();
+                        }
+                      }}
+                      onTransactionUpdate={onTransactionsUpdate}
+                      onSkipRealtime={onSkipRealtime}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteClick(transaction.id)}
+                      className="ml-auto"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
         {/* Sentinel element for scroll detection */}
         {hasMore && <div ref={loadMoreRef} className="h-4" />}
 
@@ -692,8 +798,8 @@ export function TransactionTable({
 
       {/* Floating bulk categorize box */}
       {selectedRows.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col sm:flex-row items-center gap-3 p-4 border rounded-lg bg-background shadow-lg max-w-[calc(100vw-2rem)]">
-          <span className="text-sm font-medium whitespace-nowrap">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 sm:p-4 border rounded-lg bg-background shadow-lg max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2rem)]">
+          <span className="text-sm font-medium text-center sm:text-left">
             {selectedRows.size} transaction{selectedRows.size !== 1 ? "s" : ""}{" "}
             selected
           </span>

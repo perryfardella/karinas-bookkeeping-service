@@ -5,7 +5,10 @@ import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TransactionForm } from "@/components/transaction-form";
 import { TransactionTable } from "@/components/transaction-table";
-import { TransactionFiltersComponent, TransactionFilters } from "@/components/transaction-filters";
+import {
+  TransactionFiltersComponent,
+  TransactionFilters,
+} from "@/components/transaction-filters";
 import { ExportButton } from "@/components/export-button";
 import { DollarSign, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { useInfiniteTransactions } from "@/hooks/use-infinite-transactions";
@@ -55,7 +58,7 @@ export default function TransactionsPageClient({
   initialCategories: CategoryWithChildren[];
 }) {
   const searchParams = useSearchParams();
-  
+
   // Initialize filters from URL parameters
   const initialFilters: TransactionFilters = {};
   const bankAccountIdsParam = searchParams.get("bank_account_ids");
@@ -65,7 +68,7 @@ export default function TransactionsPageClient({
       .map(Number)
       .filter((id) => !isNaN(id));
   }
-  
+
   const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
   const [sortField, setSortField] = useState<string>("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
@@ -147,7 +150,10 @@ export default function TransactionsPageClient({
         const response = await fetch(`/api/transactions?${params}`);
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || `Failed to fetch totals: ${response.status} ${response.statusText}`);
+          throw new Error(
+            errorData.error ||
+              `Failed to fetch totals: ${response.status} ${response.statusText}`
+          );
         }
 
         const data = await response.json();
@@ -178,7 +184,7 @@ export default function TransactionsPageClient({
           if (skipRealtimeRef.current) {
             return;
           }
-          
+
           // Reset and reload transactions when changes occur from other sources
           resetTransactionsRef.current?.();
         }
@@ -246,16 +252,20 @@ export default function TransactionsPageClient({
     filters.max_amount !== undefined ||
     filters.search
   );
-  
-  const shouldShowBankBalance = 
-    ((filters.bank_account_ids && filters.bank_account_ids.length === 1) && !hasOtherFilters) ||
-    (!filters.bank_account_ids && !hasOtherFilters && initialBankAccounts.length === 1);
+
+  const shouldShowBankBalance =
+    (filters.bank_account_ids &&
+      filters.bank_account_ids.length === 1 &&
+      !hasOtherFilters) ||
+    (!filters.bank_account_ids &&
+      !hasOtherFilters &&
+      initialBankAccounts.length === 1);
 
   return (
-    <div className="container mx-auto py-8 px-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Transactions</h1>
-        <div className="flex gap-2">
+    <div className="container mx-auto py-4 sm:py-8 px-4 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold">Transactions</h1>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <ExportButton transactions={transactions} />
           <TransactionForm
             bankAccounts={initialBankAccounts}
@@ -278,7 +288,9 @@ export default function TransactionsPageClient({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Transactions
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totals.count}</div>
@@ -286,7 +298,9 @@ export default function TransactionsPageClient({
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Income</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Income
+              </CardTitle>
               <TrendingUp className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
@@ -300,7 +314,9 @@ export default function TransactionsPageClient({
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Expenses
+              </CardTitle>
               <TrendingDown className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>

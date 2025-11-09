@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -13,7 +14,7 @@ import {
   Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -26,6 +27,7 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
@@ -67,7 +69,7 @@ export function Sidebar() {
 
       {/* Mobile Sidebar */}
       <div className="md:hidden">
-        <Sheet>
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button
               variant="ghost"
@@ -79,16 +81,17 @@ export function Sidebar() {
           </SheetTrigger>
           <SheetContent side="left" className="w-64">
             <div className="flex flex-col h-full">
-              <div className="flex items-center mb-6">
-                <h1 className="text-xl font-bold">Karina&apos;s Bookkeeping</h1>
-              </div>
-              <nav className="flex-1 space-y-1">
+              <SheetHeader>
+                <SheetTitle>Karina&apos;s Bookkeeping</SheetTitle>
+              </SheetHeader>
+              <nav className="flex-1 space-y-1 mt-5">
                 {navigation.map((item) => {
                   const isActive = pathname === item.href;
                   return (
                     <Link
                       key={item.name}
                       href={item.href}
+                      onClick={() => setIsOpen(false)}
                       className={cn(
                         "group flex items-center px-2 py-2 text-sm font-medium rounded-md",
                         isActive
