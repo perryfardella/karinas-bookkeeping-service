@@ -31,15 +31,17 @@ type CategoryWithChildren = {
 };
 
 // Helper function to filter out excluded categories and their descendants
-function filterCategoriesWithExclusions<T extends { id: number; name: string; children?: T[] }>(
-  categories: T[],
-  excludeIds: Set<number>
-): T[] {
+function filterCategoriesWithExclusions<
+  T extends { id: number; name: string; children?: T[] }
+>(categories: T[], excludeIds: Set<number>): T[] {
   return categories
     .filter((cat) => !excludeIds.has(cat.id))
     .map((cat) => {
       if (cat.children && cat.children.length > 0) {
-        const filteredChildren = filterCategoriesWithExclusions(cat.children, excludeIds);
+        const filteredChildren = filterCategoriesWithExclusions(
+          cat.children,
+          excludeIds
+        );
         return { ...cat, children: filteredChildren };
       }
       return cat;
@@ -134,7 +136,8 @@ export function CategoryForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
-          parent_id: parentId && parentId !== "none" ? parseInt(parentId) : null,
+          parent_id:
+            parentId && parentId !== "none" ? parseInt(parentId) : null,
         }),
       });
 
@@ -149,12 +152,12 @@ export function CategoryForm({
       setOpen(false);
       setName("");
       setParentId("none");
-      
+
       // Only refresh router if not controlled (to avoid double refresh)
       if (controlledOpen === undefined) {
         router.refresh();
       }
-      
+
       onSuccess?.(newCategoryId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -202,35 +205,41 @@ export function CategoryForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor="parent">Parent Category (Optional)</Label>
-              <Select
-                value={parentId || "none"}
-                onValueChange={setParentId}
-              >
+              <Select value={parentId || "none"} onValueChange={setParentId}>
                 <SelectTrigger id="parent">
                   <SelectValue placeholder="Select a parent category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None (Top-level category)</SelectItem>
+                  <SelectItem value="none">
+                    None (Top-level category)
+                  </SelectItem>
                   {(() => {
                     // Calculate exclude IDs once
                     const excludeIds = categoryId
                       ? (() => {
-                          const catToExclude = findCategoryById(allCategories, categoryId);
+                          const catToExclude = findCategoryById(
+                            allCategories,
+                            categoryId
+                          );
                           return catToExclude
                             ? new Set(getDescendantIds(catToExclude))
                             : new Set([categoryId]);
                         })()
                       : new Set<number>();
-                    
+
                     // Filter out excluded categories first
-                    const filteredCategories = filterCategoriesWithExclusions(allCategories, excludeIds);
-                    
+                    const filteredCategories = filterCategoriesWithExclusions(
+                      allCategories,
+                      excludeIds
+                    );
+
                     // Then flatten with hierarchical display
-                    const flatCategories = flattenCategoriesForSelect(filteredCategories);
-                    
+                    const flatCategories =
+                      flattenCategoriesForSelect(filteredCategories);
+
                     return flatCategories.map((cat) => (
-                      <SelectItem 
-                        key={cat.id} 
+                      <SelectItem
+                        key={cat.id}
                         value={cat.id.toString()}
                         title={cat.fullPath}
                         style={{ paddingLeft: `${8 + cat.level * 16}px` }}
@@ -245,9 +254,7 @@ export function CategoryForm({
                 </SelectContent>
               </Select>
             </div>
-            {error && (
-              <div className="text-sm text-destructive">{error}</div>
-            )}
+            {error && <div className="text-sm text-destructive">{error}</div>}
           </div>
           <DialogFooter>
             <Button
@@ -266,4 +273,3 @@ export function CategoryForm({
     </Dialog>
   );
 }
-
