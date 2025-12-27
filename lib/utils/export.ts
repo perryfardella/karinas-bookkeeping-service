@@ -121,7 +121,7 @@ export async function exportTransactionsToPDF(
 
   // Table headers
   doc.setFontSize(10);
-  doc.setFont(undefined, "bold");
+  doc.setFont("helvetica", "bold");
   const headers = ["Date", "Account", "Description", "Amount", "Category"];
   const colWidths = [25, 35, 60, 25, 35];
   let x = margin;
@@ -133,7 +133,7 @@ export async function exportTransactionsToPDF(
   y += 7;
 
   // Table rows
-  doc.setFont(undefined, "normal");
+  doc.setFont("helvetica", "normal");
   transactions.forEach((txn) => {
     if (y > doc.internal.pageSize.getHeight() - 20) {
       doc.addPage();

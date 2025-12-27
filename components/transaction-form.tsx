@@ -31,29 +31,7 @@ import {
 import { CalendarIcon, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn, parseLocalDate } from "@/lib/utils";
-
-type TransactionWithDetails = {
-  id: number;
-  bank_account_id: number;
-  date: string;
-  amount: number;
-  description: string;
-  category_id: number;
-  transfer_to_account_id: number | null;
-  bank_account: {
-    id: number;
-    name: string;
-  };
-  category: {
-    id: number;
-    name: string;
-    parent_id: number | null;
-  };
-  transfer_to_account: {
-    id: number;
-    name: string;
-  } | null;
-};
+import type { TransactionWithDetails } from "@/components/transaction-table";
 
 type BankAccount = {
   id: number;
@@ -100,10 +78,30 @@ export function TransactionForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to find category in tree structure
+  const findCategoryInTree = (
+    cats: CategoryWithChildren[],
+    id: number
+  ): CategoryWithChildren | null => {
+    for (const cat of cats) {
+      if (cat.id === id) {
+        return cat;
+      }
+      if (cat.children) {
+        const found = findCategoryInTree(cat.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
   const flatCategories = flattenCategoriesForSelect(categories);
   const selectedCategory = flatCategories.find(
     (c) => c.id.toString() === categoryId
   );
+  const selectedCategoryFull = categoryId
+    ? findCategoryInTree(categories, parseInt(categoryId))
+    : null;
   const isTransfer = selectedCategory?.is_transfer_category || false;
 
   useEffect(() => {
@@ -163,7 +161,10 @@ export function TransactionForm({
         // Set flag to skip realtime BEFORE optimistic update
         onSkipRealtime?.(true);
 
-        const selectedCategory = flatCategories.find((c) => c.id.toString() === categoryId);
+        const selectedCategoryFlat = flatCategories.find((c) => c.id.toString() === categoryId);
+        const selectedCategoryFull = categoryId
+          ? findCategoryInTree(categories, parseInt(categoryId))
+          : null;
         const selectedBankAccount = bankAccounts.find((a) => a.id.toString() === bankAccountId);
         const selectedTransferAccount = transferToAccountId
           ? bankAccounts.find((a) => a.id.toString() === transferToAccountId)
@@ -183,11 +184,11 @@ export function TransactionForm({
                 bank_account: selectedBankAccount
                   ? { id: selectedBankAccount.id, name: selectedBankAccount.name }
                   : t.bank_account,
-                category: selectedCategory
+                category: selectedCategoryFull
                   ? {
-                      id: selectedCategory.id,
-                      name: selectedCategory.name,
-                      parent_id: selectedCategory.parent_id,
+                      id: selectedCategoryFull.id,
+                      name: selectedCategoryFull.name,
+                      parent_id: selectedCategoryFull.parent_id,
                     }
                   : t.category,
                 transfer_to_account: selectedTransferAccount

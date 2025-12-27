@@ -13,17 +13,11 @@ import { ExportButton } from "@/components/export-button";
 import { DollarSign, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { useInfiniteTransactions } from "@/hooks/use-infinite-transactions";
 import { useSearchParams } from "next/navigation";
+import { CategoryWithChildren } from "@/lib/supabase/queries/categories";
 
 type BankAccount = {
   id: number;
   name: string;
-};
-
-type CategoryWithChildren = {
-  id: number;
-  name: string;
-  parent_id: number | null;
-  children?: CategoryWithChildren[];
 };
 
 type TransactionWithDetails = {
@@ -80,7 +74,7 @@ export default function TransactionsPageClient({
   } | null>(null);
   const skipRealtimeRef = useRef(false);
   const realtimeChannelRef = useRef<any>(null);
-  const resetTransactionsRef = useRef<() => Promise<void>>();
+  const resetTransactionsRef = useRef<(() => Promise<void>) | null>(null);
 
   const {
     data: transactions,

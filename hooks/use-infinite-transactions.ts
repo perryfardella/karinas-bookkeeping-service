@@ -107,12 +107,12 @@ function createStore(props: UseInfiniteTransactionsProps) {
       }
 
       const result = await response.json()
-      const newTransactions = result.transactions || []
+      const newTransactions: TransactionWithDetails[] = result.transactions || []
       const totalCount = result.count || 0
 
       // Deduplicate transactions by ID to prevent duplicate keys
       const existingIds = new Set(state.data.map(t => t.id))
-      const uniqueNewTransactions = newTransactions.filter(t => !existingIds.has(t.id))
+      const uniqueNewTransactions = newTransactions.filter((t: TransactionWithDetails) => !existingIds.has(t.id))
 
       // Determine if there are more pages:
       // 1. If we got fewer transactions than requested, we've reached the end

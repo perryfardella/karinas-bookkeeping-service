@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CategorizationTable } from "@/components/categorization-table";
+import { CategoryWithChildren } from "@/lib/supabase/queries/categories";
 
 type ParsedTransaction = {
   date: string;
@@ -15,13 +16,6 @@ type ParsedTransaction = {
 type BankAccount = {
   id: number;
   name: string;
-};
-
-type CategoryWithChildren = {
-  id: number;
-  name: string;
-  parent_id: number | null;
-  children?: CategoryWithChildren[];
 };
 
 export function CategorizationPageClient({

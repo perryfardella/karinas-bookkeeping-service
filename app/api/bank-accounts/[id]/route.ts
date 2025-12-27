@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateBankAccount, deleteBankAccount } from "@/lib/supabase/queries/bank-accounts";
+import {
+  updateBankAccount,
+  deleteBankAccount,
+} from "@/lib/supabase/queries/bank-accounts";
 import { createClient } from "@/lib/supabase/server";
 
 export async function PUT(
@@ -17,9 +20,12 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const id = parseInt(id);
-    if (isNaN(id)) {
-      return NextResponse.json({ error: "Invalid account ID" }, { status: 400 });
+    const accountId = parseInt(id);
+    if (isNaN(accountId)) {
+      return NextResponse.json(
+        { error: "Invalid account ID" },
+        { status: 400 }
+      );
     }
 
     const { name } = await request.json();
@@ -31,12 +37,17 @@ export async function PUT(
       );
     }
 
-    const account = await updateBankAccount(id, name.trim());
+    const account = await updateBankAccount(accountId, name.trim());
     return NextResponse.json(account);
   } catch (error) {
     console.error("Error updating bank account:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to update bank account" },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to update bank account",
+      },
       { status: 500 }
     );
   }
@@ -59,7 +70,10 @@ export async function DELETE(
 
     const id = parseInt(idParam);
     if (isNaN(id)) {
-      return NextResponse.json({ error: "Invalid account ID" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid account ID" },
+        { status: 400 }
+      );
     }
 
     await deleteBankAccount(id);
@@ -67,9 +81,13 @@ export async function DELETE(
   } catch (error) {
     console.error("Error deleting bank account:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to delete bank account" },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to delete bank account",
+      },
       { status: 500 }
     );
   }
 }
-
